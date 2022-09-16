@@ -1,0 +1,27 @@
+trigger:
+  branches:
+    include:
+      - master
+  batch: True
+  paths:
+    include:
+    - src
+
+stages:
+  - template: .build/templates/app/azure-pipelines-build.yaml
+
+  - template: .build/templates/app/azure-pipelines-deploy.yaml
+    parameters:
+      azdo_variable_group: CredentialRotator-NonProduction
+      deployment_environment: NonProduction
+      service_connection: SC-CR
+      stage_display_name: Non Production
+      stage_name: NonProduction
+
+  - template: .build/templates/app/azure-pipelines-deploy.yaml
+    parameters:
+      azdo_variable_group: CredentialRotator-Production
+      deployment_environment: Production
+      service_connection: SC-CR
+      stage_display_name: Production
+      stage_name: Production

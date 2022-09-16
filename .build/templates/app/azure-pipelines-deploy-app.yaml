@@ -1,0 +1,67 @@
+parameters:
+  - name: deployment_environment
+  - name: service_connection
+  - name: depends_on
+    type: object
+    default: []
+
+jobs:
+  - deployment: Function_App
+    dependsOn: ${{ parameters.depends_on }}
+    environment: ${{ parameters.deployment_environment }}
+    displayName: Function App
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    workspace:
+      clean: all
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureCLI@2
+              displayName: 'Get Deployment Parameters'
+              inputs:
+                azureSubscription: ${{ parameters.service_connection }}
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  FUNC_NAME=$(az resource list --tag cr_resource=function_app --query "[? resourceGroup=='$(global.resourceGroupName)'].name" -o tsv)
+                  echo "##vso[task.setvariable variable=FUNC_NAME]$FUNC_NAME"
+
+                  EG_SYS_TOPIC=$(az resource list --tag cr_resource=eg_system_topic --query "[? resourceGroup=='$(global.resourceGroupName)'].name" -o tsv)
+                  echo "##vso[task.setvariable variable=EG_SYS_TOPIC]$EG_SYS_TOPIC"
+
+            - task: AzureCLI@2
+              displayName: 'Deploy function app via cli'
+              inputs:
+                azureSubscription: ${{ parameters.service_connection }}
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  az functionapp deployment source config-zip \
+                  -g '$(global.resourceGroupName)' \
+                  -n '$(FUNC_NAME)' \
+                  --build-remote true \
+                  --src '$(Pipeline.Workspace)/func/$(Build.BuildId).zip'
+
+            - task: AzureCLI@2
+              displayName: 'Setup Function App Event Grid Subscription'
+              inputs:
+                azureSubscription: ${{ parameters.service_connection }}
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  az eventgrid system-topic event-subscription create \
+                    --name es-cred \
+                    -g $(global.resourceGroupName) \
+                    --system-topic-name $(EG_SYS_TOPIC) \
+                    --endpoint '/subscriptions/$(global.subscriptionId)/resourceGroups/$(global.resourceGroupName)/providers/Microsoft.Web/sites/$(FUNC_NAME)/functions/SendEmailAlert' \
+                    --endpoint-type azurefunction \
+                    --event-delivery-schema eventgridschema \
+                    --included-event-types Microsoft.KeyVault.SecretNewVersionCreated \
+                    --advanced-filter data.ObjectName StringNotBeginsWith metacr
+
+              

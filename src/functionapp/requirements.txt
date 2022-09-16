@@ -1,0 +1,11 @@
+# DO NOT include azure-functions-worker in this file
+# The Python Worker is managed by Azure Functions platform
+# Manually managing azure-functions-worker may cause unexpected issues
+
+azure-data-tables==12.4.0
+azure-functions==1.11.2
+azure-identity==1.10.0
+azure-keyvault-secrets==4.4.0
+msgraph-core==0.2.2
+pyjson5==1.6.1
+sendgrid==6.9.7

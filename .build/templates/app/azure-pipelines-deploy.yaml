@@ -1,0 +1,20 @@
+parameters:
+  - name: azdo_variable_group
+  - name: deployment_environment
+  - name: service_connection
+  - name: stage_name
+  - name: stage_display_name
+
+stages:
+  - stage: ${{ parameters.deployment_environment }}
+    displayName: ${{ parameters.stage_display_name }}
+
+    variables:
+      - group: ${{ parameters.azdo_variable_group }}
+
+    jobs:
+      - template: azure-pipelines-deploy-app.yaml
+        parameters:
+          deployment_environment: ${{ parameters.deployment_environment }}
+          service_connection: ${{ parameters.service_connection }}
+

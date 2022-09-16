@@ -1,0 +1,26 @@
+jobs:
+  - job: 'Infra'
+
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    variables:
+      - name: out_dir
+        value: $(Build.ArtifactStagingDirectory)/infra
+    
+    steps:
+    - bash: |
+        mkdir $(out_dir)
+      displayName: 'Create Output Directory'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(out_dir)'
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/.build'
+        contents: |
+          bicep/**
+          configs/**
+        targetFolder: '$(out_dir)'
+
+    - publish: $(out_dir)
+      artifact: infra

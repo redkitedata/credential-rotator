@@ -1,0 +1,12 @@
+{
+    "functionapp": {
+        "sku": {
+            "name": "EP1",
+            "tier": "ElasticPremium"
+        },
+        "kind": "functionapp",
+        "properties": {
+            "reserved": true
+        }
+    }
+}

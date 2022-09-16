@@ -1,0 +1,39 @@
+parameters:
+  - name: deployment_environment
+  - name: service_connection
+
+jobs:
+  - deployment: Infra
+    environment: ${{ parameters.deployment_environment }}
+    displayName: Infra
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    workspace:
+      clean: all
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: FileTransform@1
+              displayName: "Update main.parameters.json Variables"
+              inputs:
+                folderPath: '$(Pipeline.Workspace)/infra/bicep'
+                targetFiles: "main.parameters.json"
+                fileType: json
+
+            - task: AzureCLI@2
+              displayName: 'Deploy to $(global.resourceGroupName)'
+              inputs:
+                azureSubscription: ${{ parameters.service_connection }}
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  az deployment group create \
+                  --name bicep-cred-rotator-${{ parameters.deployment_environment }} \
+                  --resource-group $(global.resourceGroupName) \
+                  --template-file "main.bicep" \
+                  --parameters @main.parameters.json
+                workingDirectory: '$(Pipeline.Workspace)/infra/bicep'

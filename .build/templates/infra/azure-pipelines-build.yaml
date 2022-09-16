@@ -1,0 +1,5 @@
+stages:
+- stage: Build
+
+  jobs:
+  - template: azure-pipelines-build-infra.yaml

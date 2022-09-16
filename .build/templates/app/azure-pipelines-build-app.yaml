@@ -1,0 +1,36 @@
+jobs:
+  - job: FunctionApp
+    displayName: Function App
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    variables:
+      - name: out_dir
+        value: $(Build.ArtifactStagingDirectory)/func
+    
+    steps:
+    - bash: |
+        mkdir $(out_dir)
+      displayName: 'Create Output Directory'
+
+    - task: UsePythonVersion@0
+      displayName: Use Python 3.9
+      inputs:
+        versionSpec: 3.9
+
+    - bash: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: 'Install requirements'
+      workingDirectory: '$(Build.SourcesDirectory)/src/functionapp'
+          
+    - task: ArchiveFiles@2
+      displayName: Archive files
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)/src/functionapp'
+        includeRootFolder: false
+        archiveFile: '$(out_dir)/$(Build.BuildId).zip'
+
+    - publish: $(out_dir)/$(Build.BuildId).zip
+      artifact: func
